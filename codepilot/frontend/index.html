@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>CodePilot — Multi-Agent Software Engineering Assistant</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <!-- Header -->
+  <header>
+    <div class="brand">
+      <div class="brand-icon">CP</div>
+      <div>
+        <span class="brand-title">CodePilot</span>
+        <span class="brand-subtitle">Autonomous Multi-Agent SE</span>
+      </div>
+    </div>
+    <div class="header-status">
+      <div class="badge" id="providerBadge">
+        <span class="badge-dot" id="providerDot"></span>
+        <span id="providerName">Gemini LLM</span>
+      </div>
+      <div class="badge" id="toolsBadge">
+        <span>MCP Tools: 10 Active</span>
+      </div>
+      <button class="btn-settings" id="openSettingsBtn">⚙️ Settings</button>
+    </div>
+  </header>
+
+  <!-- Main Container -->
+  <div class="app-container">
+    
+    <!-- Left Input Panel -->
+    <aside class="input-panel">
+      <div class="mode-tabs">
+        <button class="mode-tab active" data-mode="paste_code" id="tabPaste">Paste Code</button>
+        <button class="mode-tab" data-mode="github_repo" id="tabRepo">GitHub Repo</button>
+        <button class="mode-tab" data-mode="scenarios" id="tabDemo">Scenarios</button>
+      </div>
+
+      <div class="input-body">
+        
+        <!-- Mode: Paste Code -->
+        <div id="pasteInputs" class="mode-view">
+          <div class="form-group">
+            <label class="form-label" for="taskMessage">Task / Request</label>
+            <input type="text" id="taskMessage" class="form-control" placeholder="e.g. This code is throwing a syntax error; correct it and make sure it works." value="This code is throwing a syntax error; correct it and make sure it works.">
+          </div>
+
+          <div class="form-group">
+            <div class="form-label">
+              <span>Source Code</span>
+              <select id="codeLanguage" class="form-control" style="width: auto; padding: 0.15rem 0.4rem; font-size: 0.75rem;">
+                <option value="python">Python</option>
+                <option value="javascript">JavaScript</option>
+                <option value="typescript">TypeScript</option>
+              </select>
+            </div>
+            <textarea id="codeSnippet" class="form-control" rows="9" placeholder="Paste your source code here...">def calculate_discount(price, discount_rate)
+    if discount_rate < 0 or discount_rate > 1:
+        raise ValueError("Invalid discount rate")
+    return price * (1 - discount_rate)
+
+def main():
+    final_price = calculate_discount(100, 0.2)
+    print(f"Final price: {final_price}")
+
+if __name__ == "__main__":
+    main()</textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="errorMessage">Error / Problem Description (Optional)</label>
+            <input type="text" id="errorMessage" class="form-control" placeholder="e.g. SyntaxError: invalid syntax on line 1" value="SyntaxError: expected ':' at line 1">
+          </div>
+        </div>
+
+        <!-- Mode: GitHub Repo -->
+        <div id="repoInputs" class="mode-view" style="display: none;">
+          <div class="form-group">
+            <label class="form-label" for="githubUrl">Public GitHub Repository URL</label>
+            <input type="url" id="githubUrl" class="form-control" placeholder="https://github.com/username/repository">
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="repoTaskMessage">Task / Problem Description</label>
+            <textarea id="repoTaskMessage" class="form-control" rows="5" placeholder="e.g. Find the major bugs in this project, investigate the authentication error, and run tests.">Find the major bugs in this project, fix the defect, and run tests.</textarea>
+          </div>
+        </div>
+
+        <!-- Mode: Scenarios -->
+        <div id="scenariosInputs" class="mode-view" style="display: none;">
+          <div class="form-label" style="margin-bottom: 0.5rem;">Pre-configured Test Scenarios</div>
+          <div class="examples-list">
+            <button class="example-chip" id="demoSyntax">
+              <strong>1. Syntax Error Repair</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Fix missing colon, validate with pytest</div>
+            </button>
+            <button class="example-chip" id="demoApi">
+              <strong>2. Login API 500 Defect</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Diagnose 500 error in auth handler, patch, test</div>
+            </button>
+            <button class="example-chip" id="demoTests">
+              <strong>3. Add Comprehensive Tests</strong>
+              <div style="font-size: 0.75rem; color: var(--text-muted);">Construct normal, edge, and failure tests</div>
+            </button>
+          </div>
+        </div>
+
+        <button class="btn-primary" id="runBtn">
+          <span>🚀 Run CodePilot Assistant</span>
+        </button>
+
+      </div>
+    </aside>
+
+    <!-- Right Main Panel -->
+    <main class="main-panel">
+      
+      <!-- Welcome Empty State -->
+      <div id="welcomeState" class="solution-card" style="padding: 2rem; text-align: center;">
+        <h2 style="font-size: 1.5rem; margin-bottom: 0.5rem;">Welcome to CodePilot</h2>
+        <p style="color: var(--text-secondary); max-width: 600px; margin: 0 auto 1.5rem auto;">
+          An autonomous multi-agent software engineering assistant powered by Google Gemini, genuine MCP tools, RAG codebase indexing, and evidence-based test validation.
+        </p>
+        <div style="display: flex; justify-content: center; gap: 1rem; font-size: 0.85rem; color: var(--text-muted);">
+          <span>🔍 Code Analysis Agent</span>
+          <span>•</span>
+          <span>🛠️ Debugging/Fixing Agent</span>
+          <span>•</span>
+          <span>🧪 Testing/Validation Agent</span>
+        </div>
+      </div>
+
+      <!-- Execution Timeline Card -->
+      <div id="timelineCard" class="timeline-card" style="display: none;">
+        <div class="timeline-header">
+          <div class="timeline-title">
+            <span id="spinnerIcon" style="display: inline-block;">⚙️</span>
+            <span>Agent Workflow Stepper</span>
+          </div>
+          <span class="badge" id="workflowStatusBadge">Executing Plan</span>
+        </div>
+        <div class="timeline-steps" id="timelineSteps">
+          <!-- Dynamically populated -->
+        </div>
+      </div>
+
+      <!-- Results Card -->
+      <div id="resultsCard" class="solution-card" style="display: none;">
+        <div class="card-header">
+          <div class="card-title">
+            <span id="resultSuccessIcon">✅</span>
+            <span id="resultHeading">Solution & Verification Evidence</span>
+          </div>
+          <span class="badge" id="evalScoreBadge" style="background-color: var(--success-bg); color: var(--success);">Quality Score: 0.95</span>
+        </div>
+        <div class="card-body">
+          
+          <!-- Summary Box -->
+          <div class="summary-box" id="resultSummary">
+            <!-- Populated dynamically -->
+          </div>
+
+          <!-- Solution Code -->
+          <div id="codeSection" style="margin-bottom: 1.25rem;">
+            <div class="form-label" style="margin-bottom: 0.35rem;">Corrected Source Code</div>
+            <div class="code-wrapper">
+              <div class="code-header">
+                <span id="codeLangLabel">PYTHON</span>
+                <button class="btn-settings" id="copyCodeBtn" style="padding: 0.15rem 0.5rem; font-size: 0.75rem;">📋 Copy</button>
+              </div>
+              <pre class="code-content"><code id="solutionCode"></code></pre>
+            </div>
+          </div>
+
+          <!-- Modified Files & Diff -->
+          <div id="diffSection" style="margin-bottom: 1.25rem; display: none;">
+            <div class="form-label" style="margin-bottom: 0.35rem;">Workspace Modifications (Unified Diff)</div>
+            <pre class="diff-content" id="diffContent"></pre>
+          </div>
+
+          <!-- Automated Test Evidence -->
+          <div class="test-box" id="testBox">
+            <div class="test-header">
+              <span>Test Runner Evidence</span>
+              <span id="testOutcomePill" class="test-pass">PASSED</span>
+            </div>
+            <div id="testCommandLabel" style="color: var(--text-secondary); margin-bottom: 0.5rem;">Command: pytest -v</div>
+            <pre id="testRawOutput" style="white-space: pre-wrap; color: var(--text-muted); max-height: 180px; overflow-y: auto;"></pre>
+          </div>
+
+        </div>
+      </div>
+
+    </main>
+  </div>
+
+  <!-- Settings Modal -->
+  <div class="modal" id="settingsModal">
+    <div class="modal-content">
+      <h3 style="margin-bottom: 1rem;">CodePilot Settings</h3>
+      
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label class="form-label" for="settingProvider">LLM Provider</label>
+        <select id="settingProvider" class="form-control">
+          <option value="gemini">Google Gemini (Recommended)</option>
+          <option value="openai">OpenAI</option>
+          <option value="mock">Deterministic Mock (Offline Testing)</option>
+        </select>
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1rem;">
+        <label class="form-label" for="settingGeminiKey">Google Gemini API Key</label>
+        <input type="password" id="settingGeminiKey" class="form-control" placeholder="AIzaSy...">
+      </div>
+
+      <div class="form-group" style="margin-bottom: 1.5rem;">
+        <label class="form-label" for="settingOpenaiKey">OpenAI API Key (Optional)</label>
+        <input type="password" id="settingOpenaiKey" class="form-control" placeholder="sk-...">
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button class="btn-settings" id="closeSettingsBtn">Cancel</button>
+        <button class="btn-primary" id="saveSettingsBtn" style="padding: 0.4rem 1rem;">Save Settings</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/app.js"></script>
+</body>
+</html>

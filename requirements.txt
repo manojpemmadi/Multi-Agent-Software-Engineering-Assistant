@@ -1,0 +1,23 @@
+# Core Framework & Web
+fastapi>=0.115.0
+uvicorn>=0.30.0
+sse-starlette>=2.1.0
+pydantic>=2.8.0
+python-dotenv>=1.0.0
+rich>=13.7.0
+
+# LLM Providers
+google-genai>=1.0.0
+google-generativeai>=0.8.0
+openai>=1.40.0
+
+# Model Context Protocol (MCP)
+mcp>=1.2.0
+
+# RAG & Embeddings
+chromadb>=0.5.0
+sentence-transformers>=3.0.0
+
+# Testing & Validation
+pytest>=8.0.0
+pytest-asyncio>=0.23.0
