@@ -48,7 +48,7 @@ class BaseAgent(ABC):
     def get_allowed_tool_descriptions(self, step_tools: Optional[List[str]] = None) -> List[Dict[str, Any]]:
         """Retrieve MCP tool schemas permitted for this agent's role."""
         allowed = self.mcp_client.get_allowed_tools_for_role(self.role)
-        if step_tools:
+        if step_tools is not None:
             allowed = [t for t in allowed if t["name"] in step_tools]
         return allowed
 

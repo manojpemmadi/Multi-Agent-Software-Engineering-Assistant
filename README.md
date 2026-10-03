@@ -1,4 +1,7 @@
+<<<<<<< HEAD
 
+=======
+>>>>>>> 1b09afb (Fix Gemini integration and agent tool permissions)
 # CodePilot — Production Multi-Agent Software Engineering Assistant
 
 CodePilot is a production-level, LLM-based autonomous software engineering assistant. It provides an intuitive chatbot web interface where developers can paste broken source code, submit error traces, or supply a public GitHub repository URL. The system understands the request, inspects the codebase using a RAG knowledge retrieval subsystem, reasons about the problem, utilizes real external tools via the **Model Context Protocol (MCP)**, makes surgical and controlled modifications, runs automated test suites, and verifies the solution with an evidence-based final evaluation loop before presenting the answer to the user.
@@ -87,7 +90,7 @@ CodePilot contains **exactly three specialized worker agents**, an **LLM-powered
 ## 🌟 Key Capabilities
 
 ### 1. Dynamic LLM Planning (Zero Keyword Routing)
-The orchestrator never relies on hardcoded `if "debug" in task` rules. Instead, it prompts Google Gemini with the task description, workspace context, and the **Agent Registry** (which defines each agent's domain and allowed tools) to generate a structured, dependency-ordered DAG (`ExecutionPlan`). The plan is strictly validated against the registry before execution.
+The orchestrator never relies on hardcoded `if "debug" in task` rules. Instead, it prompts Google Gemini with the task description, workspace context, and the **Agent Registry** (which defines each agent's domain and allowed tools) to generate a structured, dependency-ordered DAG (`ExecutionPlan`). The plan is strictly validated against the registry before execution. Each step's `allowed_tools` is an enforced least-privilege boundary: the MCP client checks it in addition to role permissions, and debugging steps include the discovery tools required by the debugging agent.
 
 ### 2. Specialized Worker Agents
 - **🔍 Code Analysis Agent**: Inspects unfamiliar repositories, traces execution flows, searches functions/classes via RAG and MCP tools, and provides structured architecture/defect findings.
@@ -110,7 +113,7 @@ Agents interact with the outside world exclusively through standard Model Contex
 Before displaying results, the **FinalEvaluator** examines tangible tool evidence (test results, diffs, syntax checks). If tests fail or modifications are absent, the orchestrator triggers a targeted retry cycle, feeding the failure trace back to the Debugging Agent to revise the fix, bounded to a maximum of 3 attempts to prevent infinite loops.
 
 ### 6. Clean, Swappable LLM Service Interface
-All LLM operations are isolated behind the `BaseLLMService` abstract class. Google Gemini (`gemini-2.5-flash`) is the primary provider using the official `google-genai` SDK, with built-in swappable providers for OpenAI and an offline deterministic mock provider for testing.
+All LLM operations are isolated behind the `BaseLLMService` abstract class. Google Gemini (`gemini-3.8-flash`) is the primary provider using the official `google-genai` SDK and Interactions API, with built-in swappable providers for OpenAI and an offline deterministic mock provider for testing.
 
 ---
 
@@ -154,7 +157,7 @@ LLM_PROVIDER=gemini
 
 # Google Gemini API Key
 GEMINI_API_KEY=AIzaSyYourGeminiApiKeyHere
-GEMINI_MODEL=gemini-2.5-flash
+GEMINI_MODEL=gemini-3.8-flash
 
 # Optional alternative provider
 OPENAI_API_KEY=
@@ -252,4 +255,3 @@ CodePilot enforces defense-in-depth when dealing with untrusted user code or ext
 ├── run.py               # Application entry point (--web or --cli)
 └── README.md            # Comprehensive documentation
 ```
->>>>>>> bac0a9f (Initial commit: Production-level CodePilot multi-agent SE assistant)

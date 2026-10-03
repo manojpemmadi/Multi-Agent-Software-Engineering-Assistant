@@ -75,7 +75,7 @@ class MCPClient:
         if tool_name not in role_allowed:
             return False
 
-        if step_allowed_tools:
+        if step_allowed_tools is not None:
             return tool_name in step_allowed_tools
 
         return True
@@ -91,18 +91,25 @@ class MCPClient:
         """Execute a tool with independent role-based security validation."""
         # 1. Independent Permission Enforcement
         if not self.is_tool_allowed(role, tool_name, step_allowed_tools):
+            if tool_name not in ROLE_PERMISSIONS.get(role, set()):
+                denial_reason = f"Agent role '{role.value}' is not permitted to execute tool '{tool_name}'."
+            else:
+                denial_reason = (
+                    f"Tool '{tool_name}' is not included in this execution step's allowed_tools."
+                )
             logger.warning(
-                "Permission Denied: Agent role '%s' attempted to call unauthorized tool '%s'.",
-                role.value,
-                tool_name,
+                "Permission Denied: %s",
+                denial_reason,
             )
             role_allowed = sorted(list(ROLE_PERMISSIONS.get(role, set())))
+            step_allowed = sorted(step_allowed_tools) if step_allowed_tools is not None else None
             return ToolResult(
                 tool_name=tool_name,
                 is_error=True,
                 output=(
-                    f"PERMISSION DENIED: Agent role '{role.value}' is not permitted to execute tool '{tool_name}'. "
-                    f"Allowed tools for your role are: {role_allowed}"
+                    f"PERMISSION DENIED: {denial_reason} "
+                    f"Allowed tools for your role are: {role_allowed}. "
+                    f"Allowed tools for this step are: {step_allowed}."
                 ),
             )
 

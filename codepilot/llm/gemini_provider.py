@@ -1,6 +1,5 @@
 """Google Gemini LLM provider implementation using google-genai SDK."""
 
-import json
 import logging
 from typing import Optional, Type, TypeVar
 from pydantic import BaseModel
@@ -55,20 +54,15 @@ class GeminiLLMService(BaseLLMService):
                 "Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file."
             )
 
-        from google.genai import types
-
-        config = types.GenerateContentConfig(
-            temperature=temperature,
-            system_instruction=system_prompt if system_prompt else None,
-        )
-
         try:
-            response = self._client.models.generate_content(
+            interaction = self._client.interactions.create(
                 model=self.model_name,
-                contents=prompt,
-                config=config,
+                input=prompt,
+                system_instruction=system_prompt if system_prompt else None,
+                generation_config={"temperature": temperature},
+                store=False,
             )
-            return response.text or ""
+            return interaction.output_text or ""
         except Exception as e:
             logger.error("Gemini text generation failed: %s", e)
             raise RuntimeError(f"Gemini API error: {str(e)}") from e
@@ -85,28 +79,20 @@ class GeminiLLMService(BaseLLMService):
                 "Gemini API key is not configured. Please set GEMINI_API_KEY in your .env file."
             )
 
-        from google.genai import types
-
-        config = types.GenerateContentConfig(
-            temperature=temperature,
-            system_instruction=system_prompt if system_prompt else None,
-            response_mime_type="application/json",
-            response_schema=response_model,
-        )
-
         try:
-            response = self._client.models.generate_content(
+            interaction = self._client.interactions.create(
                 model=self.model_name,
-                contents=prompt,
-                config=config,
+                input=prompt,
+                system_instruction=system_prompt if system_prompt else None,
+                generation_config={"temperature": temperature},
+                response_format={
+                    "type": "text",
+                    "mime_type": "application/json",
+                    "schema": response_model.model_json_schema(),
+                },
+                store=False,
             )
-
-            # Check if response.parsed already holds the instantiated model
-            if hasattr(response, "parsed") and isinstance(response.parsed, response_model):
-                return response.parsed
-
-            # Fall back to parsing the json text
-            raw_text = response.text or "{}"
+            raw_text = interaction.output_text or "{}"
             # Clean markdown code blocks if present
             raw_text = raw_text.strip()
             if raw_text.startswith("```json"):

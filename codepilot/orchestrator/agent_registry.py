@@ -55,6 +55,7 @@ class AgentRegistry:
                 description="Diagnoses software defects, investigates error traces, produces controlled surgical code modifications, and verifies syntax.",
                 responsibilities=[
                     "Investigate root cause of bugs, syntax errors, and runtime exceptions.",
+                    "Discover and inspect relevant workspace files before diagnosing a defect.",
                     "Formulate precise surgical patches and modifications.",
                     "Apply changes using controlled MCP file write/edit tools.",
                     "Verify syntax and check compilation.",
@@ -88,7 +89,7 @@ class AgentRegistry:
                 f"- Role: '{role.value}' ({cap.title})\n"
                 f"  Description: {cap.description}\n"
                 f"  Responsibilities:\n  - {resps}\n"
-                f"  Permitted Tools: [{tools}]"
+                f"  Authorized MCP tools (exact names): [{tools}]"
             )
         return "\n\n".join(blocks)
 

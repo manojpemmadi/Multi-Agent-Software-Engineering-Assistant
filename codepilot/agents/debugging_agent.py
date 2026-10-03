@@ -56,6 +56,16 @@ class DebuggingAgent(BaseAgent):
         # 1. Identify primary files in workspace to inspect
         list_res = self.execute_tool("list_files", {"subpath": ".", "max_depth": 2}, workspace, task.allowed_tools)
         tool_calls_made.append(ToolCall(call_id="call_list", tool_name="list_files", arguments={"max_depth": 2}))
+        if list_res.is_error:
+            return AgentResult(
+                status=TaskStatus.FAILURE,
+                agent=self.role,
+                summary="Could not inspect workspace files; debugging stopped.",
+                evidence=list_res.output,
+                errors=[list_res.output],
+                confidence=0.0,
+                tool_calls_made=tool_calls_made,
+            )
         items = list_res.structured_data.get("items", []) if list_res.structured_data else []
 
         code_files = [
@@ -70,6 +80,17 @@ class DebuggingAgent(BaseAgent):
         for p in code_files[:4]:
             r_res = self.execute_tool("read_file", {"file_path": p}, workspace, task.allowed_tools)
             tool_calls_made.append(ToolCall(call_id=f"call_read_{p}", tool_name="read_file", arguments={"file_path": p}))
+            if r_res.is_error:
+                return AgentResult(
+                    status=TaskStatus.FAILURE,
+                    agent=self.role,
+                    summary=f"Could not read '{p}'; debugging stopped.",
+                    evidence=r_res.output,
+                    files_inspected=files_inspected,
+                    errors=[r_res.output],
+                    confidence=0.0,
+                    tool_calls_made=tool_calls_made,
+                )
             files_inspected.append(p)
             file_contents[p] = r_res.output
 
@@ -130,10 +151,32 @@ Analyze the root cause, repair any syntax, logic, or runtime defects, and output
                 arguments={"file_path": target_path, "bytes": len(fix.complete_fixed_code)},
             )
         )
+        if write_res.is_error:
+            return AgentResult(
+                status=TaskStatus.FAILURE,
+                agent=self.role,
+                summary=f"Could not apply the proposed fix to '{target_path}'.",
+                evidence=write_res.output,
+                files_inspected=files_inspected,
+                errors=[write_res.output],
+                confidence=0.0,
+                tool_calls_made=tool_calls_made,
+            )
 
         # 4. Inspect diff using MCP git_diff
         diff_res = self.execute_tool("git_diff", {}, workspace, task.allowed_tools)
         tool_calls_made.append(ToolCall(call_id="call_diff", tool_name="git_diff", arguments={}))
+        if diff_res.is_error:
+            return AgentResult(
+                status=TaskStatus.FAILURE,
+                agent=self.role,
+                summary="Could not verify the applied change with git diff.",
+                evidence=diff_res.output,
+                files_inspected=files_inspected,
+                errors=[diff_res.output],
+                confidence=0.0,
+                tool_calls_made=tool_calls_made,
+            )
         diff_text = diff_res.structured_data.get("diff", "") if diff_res.structured_data else diff_res.output
 
         # 5. Quick syntax validation if Python
@@ -147,6 +190,17 @@ Analyze the root cause, repair any syntax, logic, or runtime defects, and output
                 task.allowed_tools,
             )
             tool_calls_made.append(ToolCall(call_id="call_syntax_check", tool_name="run_command", arguments={"command": "py_compile"}))
+            if compile_res.is_error:
+                return AgentResult(
+                    status=TaskStatus.FAILURE,
+                    agent=self.role,
+                    summary=f"Could not validate syntax for '{target_path}'.",
+                    evidence=compile_res.output,
+                    files_inspected=files_inspected,
+                    errors=[compile_res.output],
+                    confidence=0.0,
+                    tool_calls_made=tool_calls_made,
+                )
             if not compile_res.structured_data.get("success", True):
                 syntax_ok = False
                 syntax_err = compile_res.output

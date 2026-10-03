@@ -34,7 +34,18 @@ class LLMPlanner:
             "- NEVER use hardcoded keyword matching. Reason directly about the technical problem.\n"
             "- Select agents solely based on their declared capabilities.\n"
             "- Ensure step dependencies form a valid DAG (dependencies must reference prior step IDs).\n"
-            "- Only assign tools that the agent's role is permitted to use.\n"
+            "- allowed_tools is an enforced authorization boundary for that specific step, not a suggestion.\n"
+            "- Include every registered MCP tool that the assigned agent needs for its specific objective; "
+            "the agent cannot request tools omitted from allowed_tools.\n"
+            "- For existing-codebase inspection or debugging, include the required discovery/inspection tools "
+            "from the assigned role's authorized tools, such as list_files, view_tree, read_file, and search_code.\n"
+            "- Every Debugging / Fixing step must include list_files: that agent calls it before it can discover files. "
+            "Also include read_file, write_file, and git_diff when the step inspects and modifies workspace code; "
+            "include run_command when syntax or command validation is required.\n"
+            "- For code modifications, include the authorized write/replace tools the agent needs.\n"
+            "- For testing, include authorized source inspection and test execution tools needed for that step.\n"
+            "- Select a sensible least-privilege subset; do not grant every role every tool.\n"
+            "- Never assign a tool that is not listed for the selected role in REGISTERED AGENTS & CAPABILITIES.\n"
             "- Typical workflows:\n"
             "  * Bug fix / error: Code Analysis -> Debugging / Fixing -> Testing / Validation\n"
             "  * Codebase question: Code Analysis\n"
@@ -68,7 +79,7 @@ Generate a comprehensive ExecutionPlan matching the ExecutionPlan schema.
                 system_prompt=system_prompt,
                 temperature=0.1,
             )
-        except Exception as e:
+        except RuntimeError as e:
             logger.warning("Structured plan generation failed, falling back to heuristic plan: %s", e)
             plan = self._fallback_plan(request, workspace_context)
 
@@ -109,7 +120,17 @@ Generate a comprehensive ExecutionPlan matching the ExecutionPlan schema.
                 objective=f"Diagnose and correct the defect: {request.message}",
                 expected_output="Repaired code with verified syntax.",
                 dependencies=[step_id - 1] if step_id > 1 else [],
-                allowed_tools=["read_file", "write_file", "replace_file_content", "run_command", "git_diff"],
+                allowed_tools=[
+                    "list_files",
+                    "view_tree",
+                    "read_file",
+                    "search_code",
+                    "write_file",
+                    "replace_file_content",
+                    "run_command",
+                    "git_status",
+                    "git_diff",
+                ],
             )
         )
         step_id += 1
@@ -145,9 +166,6 @@ Generate a comprehensive ExecutionPlan matching the ExecutionPlan schema.
                 continue
 
             valid_tools = [t for t in step.allowed_tools if t in cap.allowed_tools]
-            if not valid_tools:
-                valid_tools = sorted(list(cap.allowed_tools))
-
             valid_deps = [d for d in step.dependencies if d < step.step_id and d in seen_ids]
 
             step.allowed_tools = valid_tools
