@@ -1,7 +1,4 @@
-<<<<<<< HEAD
 
-=======
->>>>>>> 1b09afb (Fix Gemini integration and agent tool permissions)
 # CodePilot — Production Multi-Agent Software Engineering Assistant
 
 CodePilot is a production-level, LLM-based autonomous software engineering assistant. It provides an intuitive chatbot web interface where developers can paste broken source code, submit error traces, or supply a public GitHub repository URL. The system understands the request, inspects the codebase using a RAG knowledge retrieval subsystem, reasons about the problem, utilizes real external tools via the **Model Context Protocol (MCP)**, makes surgical and controlled modifications, runs automated test suites, and verifies the solution with an evidence-based final evaluation loop before presenting the answer to the user.
